@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { User, Session } from '@supabase/supabase-js';
 
 const Auth = () => {
+  const [fullName, setFullName] = useState(""); // New state for full name
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,7 +43,16 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    // Add the full name to the user's metadata on sign up
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
@@ -67,6 +76,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* ... Logo and Card Header ... */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Heart className="w-10 h-10 text-primary" />
@@ -87,6 +97,7 @@ const Auth = () => {
               </TabsList>
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4 pt-4">
+                  {/* ... Sign In form fields ... */}
                   <div className="space-y-2">
                     <Label htmlFor="signin-email">Email</Label>
                     <Input id="signin-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -105,6 +116,11 @@ const Auth = () => {
               </TabsContent>
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4 pt-4">
+                  {/* New Full Name field */}
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-fullname">Full Name</Label>
+                    <Input id="signup-fullname" type="text" placeholder="Enter your full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
                     <Input id="signup-email" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />

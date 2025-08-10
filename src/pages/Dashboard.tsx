@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Heart, Plus, Calendar, ShoppingCart, User as UserIcon, LogOut, PawPrint } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { User, Session } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -55,8 +55,11 @@ const Dashboard = () => {
   }
 
   if (!user) {
-    return null; // Should be redirected, but as a fallback, render nothing.
+    return null;
   }
+  
+  // Get the user's full name from metadata, or fall back to the email
+  const displayName = user.user_metadata?.full_name || user.email;
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,7 +70,8 @@ const Dashboard = () => {
             <span className="text-2xl font-bold text-foreground">PetCare</span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-muted-foreground text-sm">Welcome, {user.email}</span>
+            {/* Display the name here */}
+            <span className="text-muted-foreground text-sm">Welcome, {displayName}</span>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
@@ -77,13 +81,13 @@ const Dashboard = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
+        {/* ... Rest of the dashboard content ... */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to Your Pet Dashboard!</h1>
           <p className="text-muted-foreground">Manage all your pet's needs in one convenient place.</p>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Quick Action Cards... */}
           <Card className="hover:shadow-lg transition-shadow cursor-pointer"><CardHeader className="text-center pb-3"><PawPrint className="w-12 h-12 text-primary mx-auto mb-2" /><CardTitle className="text-lg">Add Pet</CardTitle></CardHeader><CardContent className="pt-0"><CardDescription className="text-center">Create a profile for your new furry friend</CardDescription><Button className="w-full mt-4" variant="outline"><Plus className="w-4 h-4 mr-2" />Add Pet</Button></CardContent></Card>
           <Card className="hover:shadow-lg transition-shadow cursor-pointer"><CardHeader className="text-center pb-3"><Calendar className="w-12 h-12 text-primary mx-auto mb-2" /><CardTitle className="text-lg">Book Appointment</CardTitle></CardHeader><CardContent className="pt-0"><CardDescription className="text-center">Schedule vet visits and grooming</CardDescription><Button className="w-full mt-4" variant="outline"><Calendar className="w-4 h-4 mr-2" />Schedule</Button></CardContent></Card>
           <Card className="hover:shadow-lg transition-shadow cursor-pointer"><CardHeader className="text-center pb-3"><ShoppingCart className="w-12 h-12 text-primary mx-auto mb-2" /><CardTitle className="text-lg">Pet Store</CardTitle></CardHeader><CardContent className="pt-0"><CardDescription className="text-center">Shop for food, toys, and supplies</CardDescription><Button className="w-full mt-4" variant="outline"><ShoppingCart className="w-4 h-4 mr-2" />Shop Now</Button></CardContent></Card>
