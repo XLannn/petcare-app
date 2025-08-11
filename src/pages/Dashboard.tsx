@@ -1,54 +1,45 @@
-// src/pages/Dashboard.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Plus, Calendar, ShoppingCart, User as UserIcon, LogOut, PawPrint } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { auth } from "@/integrations/firebase/client";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        navigate("/auth");
-      }
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+
+    if (!storedUser || !token) {
+      navigate("/auth");
+    } else {
+      setUser(JSON.parse(storedUser));
+    }
   }, [navigate]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      navigate("/");
-    } catch (error: any) {
-      toast({ title: "Error signing out", description: error.message, variant: "destructive" });
-    }
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate("/");
   };
 
-  if (isLoading) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
-  
-  const displayName = user.displayName || user.email;
+  const displayName = user.name || user.email;
 
   return (
     <div className="min-h-screen bg-background">
