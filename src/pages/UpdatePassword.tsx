@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Heart } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/integrations/firebase/client";
 import { useToast } from "@/hooks/use-toast";
+import { updatePassword } from "firebase/auth";
 
 const UpdatePassword = () => {
   const [password, setPassword] = useState("");
@@ -14,12 +15,6 @@ const UpdatePassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Supabase redirects with the access token in the URL hash
-    // We don't need to handle it manually here, as the updateUser call will use it
-    // if it's present in the session.
-  }, []);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +26,20 @@ const UpdatePassword = () => {
       toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
+    
+    const user = auth.currentUser;
+    if (!user) {
+        toast({ title: "Error", description: "No user is signed in to update the password.", variant: "destructive" });
+        return;
+    }
+
     setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Success!", description: "Your password has been updated." });
-      navigate("/auth");
+    try {
+        await updatePassword(user, password);
+        toast({ title: "Success!", description: "Your password has been updated." });
+        navigate("/auth");
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
     }
     setIsLoading(false);
   };
