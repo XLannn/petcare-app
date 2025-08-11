@@ -7,7 +7,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import UpdatePassword from "./pages/UpdatePassword"; // Import the new page
+import UpdatePassword from "./pages/UpdatePassword";
+import ActionHandler from "./pages/ActionHandler"; // Import the new handler
 
 const queryClient = new QueryClient();
 
@@ -21,7 +22,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/update-password" element={<UpdatePassword />} /> {/* Add the new route */}
+          <Route path="/update-password" element={<UpdatePassword actionCode="" />} />
+          <Route path="/action" element={<ActionHandler />} /> {/* Add the new action route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </HashRouter>

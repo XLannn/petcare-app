@@ -7,9 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Heart } from "lucide-react";
 import { auth } from "@/integrations/firebase/client";
 import { useToast } from "@/hooks/use-toast";
-import { updatePassword } from "firebase/auth";
+import { confirmPasswordReset } from "firebase/auth";
 
-const UpdatePassword = () => {
+interface UpdatePasswordProps {
+    actionCode: string;
+}
+
+const UpdatePassword = ({ actionCode }: UpdatePasswordProps) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,16 +31,10 @@ const UpdatePassword = () => {
       return;
     }
     
-    const user = auth.currentUser;
-    if (!user) {
-        toast({ title: "Error", description: "No user is signed in to update the password.", variant: "destructive" });
-        return;
-    }
-
     setIsLoading(true);
     try {
-        await updatePassword(user, password);
-        toast({ title: "Success!", description: "Your password has been updated." });
+        await confirmPasswordReset(auth, actionCode, password);
+        toast({ title: "Success!", description: "Your password has been updated. Please sign in." });
         navigate("/auth");
     } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
