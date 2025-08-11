@@ -7,8 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { auth, db } from "@/integrations/firebase/client";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  updateProfile
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 const Auth = () => {
   const [fullName, setFullName] = useState("");
@@ -17,20 +25,18 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [view, setView] = useState("sign_in"); // 'sign_in', 'sign_up', or 'forgot_password'
+  const [view, setView] = useState("sign_in");
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user) {
-          navigate("/dashboard");
-        }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate("/dashboard");
       }
-    );
-    return () => subscription.unsubscribe();
+    });
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -44,19 +50,22 @@ const Auth = () => {
       return;
     }
     setIsLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        // This tells Supabase where to redirect the user after they click the confirmation link
-        emailRedirectTo: `${window.location.origin}/#/dashboard`,
-      },
-    });
-    if (error) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Update profile and store user info in Firestore
+      await updateProfile(user, { displayName: fullName });
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        email: user.email,
+        displayName: fullName,
+      });
+
+      toast({ title: "Success!", description: "Your account has been created." });
+      navigate("/dashboard");
+    } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Success!", description: "Please check your email to verify your account." });
     }
     setIsLoading(false);
   };
@@ -64,11 +73,11 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
       navigate("/dashboard");
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
     setIsLoading(false);
   };
@@ -76,14 +85,12 @@ const Auth = () => {
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/#/update-password`,
-    });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await sendPasswordResetEmail(auth, email);
       toast({ title: "Success!", description: "Password reset link sent! Please check your email." });
       setView("sign_in");
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
     setIsLoading(false);
   };

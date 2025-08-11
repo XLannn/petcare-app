@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Plus, Calendar, ShoppingCart, User as UserIcon, LogOut, PawPrint } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from '@supabase/supabase-js';
+import { auth } from "@/integrations/firebase/client";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -16,33 +16,23 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
       } else {
-        setUser(session.user);
+        navigate("/auth");
       }
       setIsLoading(false);
-    };
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-      }
     });
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({ title: "Error signing out", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await signOut(auth);
       navigate("/");
+    } catch (error: any) {
+      toast({ title: "Error signing out", description: error.message, variant: "destructive" });
     }
   };
 
@@ -58,8 +48,7 @@ const Dashboard = () => {
     return null;
   }
   
-  // Get the user's full name from metadata, or fall back to the email
-  const displayName = user.user_metadata?.full_name || user.email;
+  const displayName = user.displayName || user.email;
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,7 +59,6 @@ const Dashboard = () => {
             <span className="text-2xl font-bold text-foreground">PetCare</span>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Display the name here */}
             <span className="text-muted-foreground text-sm">Welcome, {displayName}</span>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="w-4 h-4 mr-2" />
@@ -81,7 +69,6 @@ const Dashboard = () => {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
-        {/* ... Rest of the dashboard content ... */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to Your Pet Dashboard!</h1>
           <p className="text-muted-foreground">Manage all your pet's needs in one convenient place.</p>
